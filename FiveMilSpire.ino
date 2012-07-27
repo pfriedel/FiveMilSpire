@@ -13,6 +13,12 @@
 #define LINE_D 5
 
 #include <avr/io.h>
+#include <EEPROM.h>
+
+// how many modes are defined?  Note that the ATtiny gets perceptably slow after the 3rd mode, so "2" is a reasonable cap here.
+#define MAX_MODE 1
+
+byte last_mode;
 
 //#define F_CPU 16000000UL
 
@@ -30,40 +36,46 @@ uint8_t led_grid_next[12] = {
 
 void setup() {
   randomSeed(analogRead(2));
-//  for(int x = 0; x<12; x++) {
-//    light_led(x);
-//    delay(100);
-//    leds_off;
-//  }
   Serial.begin(115200);
+  EEReadSettings();
+  Serial.print("last mode was: "); Serial.println(last_mode);
+  last_mode++;
+  if(last_mode > MAX_MODE) {
+    last_mode = 0;
+  }
+  Serial.print("current mode is: "); Serial.println(last_mode);
+  EESaveSettings();
 }
 
 void loop() {
-  switch(random(2)) {
+  switch(last_mode) {
     // led test
   case 0:
     while(1) {
       uint8_t led = random(4);
       int hue = random(360);
 
-      Serial.print(led); Serial.print(" "); Serial.println(hue);
-      setLedColorHSV(led,hue, 1, 1);
+      // I'm not thrilled with the look.
+//      float saturation = random(6,10)+1;
+//      saturation = saturation/10;
+//
+//      float value = random(10)+1;
+//      value = value/10;
+
+      setLedColorHSV(led, hue, 1, 1);
       draw_for_time(500);
     }
     break;
     // downward flowing rainbow inspired from the shiftPWM library example
   case 1:
     {
-      uint8_t width = random(5,20);
-      Serial.print("Width: "); Serial.println(width);
       while(1) {
-	for(uint16_t colorshift=0; colorshift<360; colorshift++) {
+	for(uint16_t colorshift=359; colorshift>=0; colorshift--) {
 	  for(uint8_t led = 0; led<4; led++) {
-	    uint16_t hue = ((led) * 360/(width)+colorshift)%360;
-	    //	    Serial.print(led); Serial.print(" "); Serial.print(colorshift); Serial.print(" "); Serial.println(hue);
+	    uint16_t hue = ((led) * 360/(16)+colorshift)%360;
 	    setLedColorHSV(led,hue,1,1);
 	  }
-	  draw_for_time(20);
+	  draw_for_time(30);
 	}
       }
       break;
@@ -83,10 +95,6 @@ void setLedColorHSV(uint8_t p, uint16_t h, float s, float v) {
   float b=0;
 
   //  float hf=h/60.0;
-
-  if(p == 0) {
-    Serial.print(h); Serial.print(" ");
-  }
 
   uint8_t i=(int)floor(h/60.0);
   float f = h/60.0 - i;
@@ -132,10 +140,7 @@ void setLedColorHSV(uint8_t p, uint16_t h, float s, float v) {
   //set each component to a integer value between 0 and 100
   int red=constrain((int)100*r,0,100);
   int green=constrain((int)100*g,0,100);
-  int blue=constrain((int)100*b,0,100);
-  if(p==0) {
-    Serial.print(red); Serial.print(" "); Serial.print(green); Serial.print(" "); Serial.println(blue);
-  }
+  int blue=constrain((int)100*b,0,50);
 
   set_led_rgb(p,red,green,blue);
 }
@@ -246,3 +251,37 @@ void fade_to_next_frame(void){
     if( changes == 0 ){break;}
   }
 }
+
+void EEReadSettings (void) {  // TODO: Detect ANY bad values, not just 255.
+  
+  byte detectBad = 0;
+  byte value = 255;
+  
+  value = EEPROM.read(0);
+  if (value > MAX_MODE)
+    detectBad = 1;
+  else
+    last_mode = value;  // MainBright has maximum possible value of 8.
+  
+  if (detectBad) {
+    last_mode = 1; // I prefer the rainbow effect.
+  }
+}
+
+void EESaveSettings (void){
+  //EEPROM.write(Addr, Value);
+  
+  // Careful if you use  this function: EEPROM has a limited number of write
+  // cycles in its life.  Good for human-operated buttons, bad for automation.
+  
+  byte value = EEPROM.read(0);
+
+  if(value != last_mode) {
+    EEPROM.write(0, last_mode);
+   Serial.println("eesave"); 
+  }
+  else {
+  Serial.println("eenosave"); 
+  }
+}
+
