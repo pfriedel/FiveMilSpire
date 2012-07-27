@@ -36,14 +36,14 @@ uint8_t led_grid_next[12] = {
 
 void setup() {
   randomSeed(analogRead(2));
-  Serial.begin(115200);
+  //  Serial.begin(115200);
   EEReadSettings();
-  Serial.print("last mode was: "); Serial.println(last_mode);
+  //  Serial.print("last mode was: "); Serial.println(last_mode);
   last_mode++;
   if(last_mode > MAX_MODE) {
     last_mode = 0;
   }
-  Serial.print("current mode is: "); Serial.println(last_mode);
+  //  Serial.print("current mode is: "); Serial.println(last_mode);
   EESaveSettings();
 }
 
@@ -278,10 +278,10 @@ void EESaveSettings (void){
 
   if(value != last_mode) {
     EEPROM.write(0, last_mode);
-   Serial.println("eesave"); 
+    //   Serial.println("eesave"); 
   }
   else {
-  Serial.println("eenosave"); 
+    //  Serial.println("eenosave"); 
   }
 }
 
