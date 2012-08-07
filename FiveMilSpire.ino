@@ -10,6 +10,7 @@
 
 #include <avr/io.h>
 #include <EEPROM.h>
+#include <avr/power.h>
 
 // how many modes are defined?  Note that the ATtiny gets perceptably slow after the 3rd mode, so "2" is a reasonable cap here.
 #define MAX_MODE 1
@@ -43,6 +44,10 @@ void setup() {
     draw_for_time(100);
     led_grid[i] = 0;
   }
+  power_adc_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_usi_disable();
 }
 
 
