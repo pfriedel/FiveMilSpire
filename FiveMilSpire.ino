@@ -1,16 +1,12 @@
-// Tiny85 versioned - ATmega requires these defines to be redone as well as the
-// DDRB/PORTB calls later on.
+// Mapping the board pins (LINE_x) to ATtiny85 Port #'s (1,2,3,4)
 
-//#define LINE_A 0 //Pin 5 on ATtiny85
-//#define LINE_B 1 //Pin 6 on ATtiny85
-//#define LINE_C 3 //Pin 2 on ATtiny85
-//#define LINE_D 4 //Pin 3 on ATtiny85
+// Line 1 will be the LED cathode of the LED nearest the board.  This will
+// always probably require a certain amount of finessing to make it work nicely.
 
-// ATmega is like so, although using 8,9,10 & 11 would keep them all on port B
-#define LINE_A 2
-#define LINE_B 3 
-#define LINE_C 4 
-#define LINE_D 5
+#define LINE_1 3 //Pin 6 on ATtiny85
+#define LINE_2 4 //Pin 5 on ATtiny85
+#define LINE_3 1 //Pin 3 on ATtiny85
+#define LINE_4 2 //Pin 2 on ATtiny85
 
 #include <avr/io.h>
 #include <EEPROM.h>
@@ -36,16 +32,20 @@ uint8_t led_grid_next[12] = {
 
 void setup() {
   randomSeed(analogRead(2));
-  //  Serial.begin(115200);
   EEReadSettings();
-  //  Serial.print("last mode was: "); Serial.println(last_mode);
   last_mode++;
   if(last_mode > MAX_MODE) {
     last_mode = 0;
   }
-  //  Serial.print("current mode is: "); Serial.println(last_mode);
   EESaveSettings();
+  for(int i=0; i<=12; i++) {
+    led_grid[i] = 100;
+    draw_for_time(100);
+    led_grid[i] = 0;
+  }
 }
+
+
 
 void loop() {
   switch(last_mode) {
@@ -54,13 +54,6 @@ void loop() {
     while(1) {
       uint8_t led = random(4);
       int hue = random(360);
-
-      // I'm not thrilled with the look.
-//      float saturation = random(6,10)+1;
-//      saturation = saturation/10;
-//
-//      float value = random(10)+1;
-//      value = value/10;
 
       setLedColorHSV(led, hue, 1, 1);
       draw_for_time(500);
@@ -75,7 +68,7 @@ void loop() {
 	    uint16_t hue = ((led) * 360/(16)+colorshift)%360;
 	    setLedColorHSV(led,hue,1,1);
 	  }
-	  draw_for_time(30);
+	  draw_for_time(10);
 	}
       }
       break;
@@ -136,13 +129,7 @@ void setLedColorHSV(uint8_t p, uint16_t h, float s, float v) {
       break;
     }
 
-  // commented out since they don't exist longer than necessary to pass off to set_led_rgb, so why bother?
-  //set each component to a integer value between 0 and 100
-  int red=constrain((int)100*r,0,100);
-  int green=constrain((int)100*g,0,100);
-  int blue=constrain((int)100*b,0,50);
-
-  set_led_rgb(p,red,green,blue);
+  set_led_rgb(p,constrain((int)100*r,0,100),constrain((int)100*g,0,100),constrain((int)100*b,0,100));
 }
 
 /* Args:
@@ -179,50 +166,50 @@ void draw_for_time(uint16_t time) {
 
 
 const uint8_t led_dir[12] = {
-  ( 1<<LINE_A | 1<<LINE_B ), // 1 r
-  ( 1<<LINE_B | 1<<LINE_C ), // 2 r
-  ( 1<<LINE_C | 1<<LINE_D ), // 3 r
-  ( 1<<LINE_D | 1<<LINE_A ), // 4 r
+  ( 1<<LINE_1 | 1<<LINE_4 ), // 1 r
+  ( 1<<LINE_4 | 1<<LINE_3 ), // 2 r
+  ( 1<<LINE_3 | 1<<LINE_2 ), // 3 r
+  ( 1<<LINE_2 | 1<<LINE_1 ), // 4 r
 
-  ( 1<<LINE_D | 1<<LINE_B ), // 1 g
-  ( 1<<LINE_A | 1<<LINE_C ), // 2 g
-  ( 1<<LINE_B | 1<<LINE_D ), // 3 g
-  ( 1<<LINE_C | 1<<LINE_A ), // 4 g
+  ( 1<<LINE_2 | 1<<LINE_4 ), // 1 g
+  ( 1<<LINE_1 | 1<<LINE_3 ), // 2 g
+  ( 1<<LINE_4 | 1<<LINE_2 ), // 3 g
+  ( 1<<LINE_3 | 1<<LINE_1 ), // 4 g
 
-  ( 1<<LINE_C | 1<<LINE_B ), // 1 b
-  ( 1<<LINE_D | 1<<LINE_C ), // 2 b
-  ( 1<<LINE_A | 1<<LINE_D ), // 3 b
-  ( 1<<LINE_B | 1<<LINE_A ), // 4 b
+  ( 1<<LINE_3 | 1<<LINE_4 ), // 1 b
+  ( 1<<LINE_2 | 1<<LINE_3 ), // 2 b
+  ( 1<<LINE_1 | 1<<LINE_2 ), // 3 b
+  ( 1<<LINE_4 | 1<<LINE_1 ), // 4 b
 };
 
 //PORTB output config for each LED (1 = High, 0 = Low)
 const uint8_t led_out[12] = {
-  ( 1<<LINE_A ), // 1 r
-  ( 1<<LINE_B ), // 2 r
-  ( 1<<LINE_C ), // 3 r
-  ( 1<<LINE_D ), // 4 r
+  ( 1<<LINE_1 ), // 1 r
+  ( 1<<LINE_4 ), // 2 r
+  ( 1<<LINE_3 ), // 3 r
+  ( 1<<LINE_2 ), // 4 r
 
-  ( 1<<LINE_D ), // 1 g
-  ( 1<<LINE_A ), // 2 g
-  ( 1<<LINE_B ), // 3 g
-  ( 1<<LINE_C ), // 4 g
+  ( 1<<LINE_2 ), // 1 g
+  ( 1<<LINE_1 ), // 2 g
+  ( 1<<LINE_4 ), // 3 g
+  ( 1<<LINE_3 ), // 4 g
 
-  ( 1<<LINE_C ), // 1 b
-  ( 1<<LINE_D ), // 2 b
-  ( 1<<LINE_A ), // 3 b
-  ( 1<<LINE_B ), // 4 b
+  ( 1<<LINE_3 ), // 1 b
+  ( 1<<LINE_2 ), // 2 b
+  ( 1<<LINE_1 ), // 3 b
+  ( 1<<LINE_4 ), // 4 b
 
 };
 
 void light_led(uint8_t led_num) { //led_num must be from 0 to 19
   //DDRD is the ports in use on an ATmega328, DDRB on an ATtiny85
-  DDRD = led_dir[led_num];
-  PORTD = led_out[led_num];
+  DDRB = led_dir[led_num];
+  PORTB = led_out[led_num];
 }
 
 void leds_off() {
-  DDRD = 0;
-  PORTD = 0;
+  DDRB = 0;
+  PORTB = 0;
 }
 
 void draw_frame(void){
@@ -278,10 +265,6 @@ void EESaveSettings (void){
 
   if(value != last_mode) {
     EEPROM.write(0, last_mode);
-    //   Serial.println("eesave"); 
-  }
-  else {
-    //  Serial.println("eenosave"); 
   }
 }
 
